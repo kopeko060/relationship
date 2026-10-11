@@ -73,12 +73,12 @@
       opacity: var(--dim-opacity) !important;
     }
 
-    /* 左側抽屜式索引選單 */
+    /* 支援滑鼠拖曳的索引選單[cite: 4] */
     .sidebar {
       position: absolute;
-      left: 10px;
+      left: 20px;
       top: 50%;
-      transform: translateY(-50%) translateX(-20px);
+      transform: translateY(-50%);
       width: 210px;
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -90,13 +90,12 @@
       z-index: 50;
       opacity: 0;
       pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.3s ease;
     }
 
     .sidebar.active {
       opacity: 1;
       pointer-events: auto;
-      transform: translateY(-50%) translateX(0);
     }
 
     .sidebar-title {
@@ -110,6 +109,10 @@
       align-items: center;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 8px;
+      cursor: grab; /* 提示使用者可拖曳 */
+    }
+    .sidebar-title:active {
+      cursor: grabbing;
     }
 
     .close-sidebar-btn {
@@ -254,7 +257,7 @@
       opacity: var(--dim-opacity);
     }
 
-    /* 角色頭像上方的專屬漫畫對話框 (Speech Bubble) */
+    /* 角色頭上方的漫畫對話框 */
     .head-speech-bubble {
       position: absolute;
       background: rgba(255, 255, 255, 0.96);
@@ -275,7 +278,6 @@
       animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
-    /* 下方指向頭像的尖角 */
     .head-speech-bubble::after {
       content: '';
       position: absolute;
@@ -289,7 +291,6 @@
       width: 0;
     }
 
-    /* 側邊欄索引使用的對話框 */
     .center-speech-bubble {
       position: absolute;
       background: rgba(255, 255, 255, 0.96);
@@ -336,9 +337,9 @@
 <body>
 
   <div class="widget-container" id="widget-root">
-    <!-- 左側隱藏關係索引選單 -->
+    <!-- 左側可拖曳的關係索引選單[cite: 4] -->
     <div id="sidebar" class="sidebar">
-      <div class="sidebar-title">
+      <div id="sidebar-drag-handle" class="sidebar-title">
         <span id="sidebar-role-title">角色關係圖</span>
         <span class="close-sidebar-btn" onclick="closeSidebar(event)">✖</span>
       </div>
@@ -384,7 +385,7 @@
         <div class="name-box"><span class="emoji-large">🦈</span><span class="char-name">路易</span></div>
       </div>
 
-      <!-- 固定實線關係 (A) 的小標題膠囊（點擊分別在兩角色頭像上方彈出氣泡！） -->
+      <!-- 固定實線關係 (A) 的小標題膠囊 -->
       <div class="rel-badge fixed-tag" style="top: 240px; left: 390px;" onclick="showHeadDialogs(event, 'cheks', '別囉嗦了！衝吧！', 'louis', '啊啊啊起司!他們要抄近路追上來了啊啊啊')">摯友|搭檔</div>
       
       <div class="rel-badge fixed-tag" style="top: 140px; left: 260px;" onclick="showHeadDialogs(event, 'louis', '我這次可是特地準備了好多蘋果餅碎！別再咬我了啦……TT', 'vivi', '(咬)')">製作者與寵物|好友</div>
@@ -403,7 +404,7 @@
       
       <div class="rel-badge fixed-tag" style="top: 420px; left: 610px;" onclick="showHeadDialogs(event, 'cheks', '有本事的話，就儘管追上來吧!', 'police', '吱吱——可惡的傢伙，給我站住——！')">通輯與被通輯</div>
 
-      <!-- 動態頭像對話框容器 (氣泡 1 & 氣泡 2) -->
+      <!-- 動態頭像對話框容器 -->
       <div id="head-bubble-1" class="head-speech-bubble" style="display: none;"></div>
       <div id="head-bubble-2" class="head-speech-bubble" style="display: none;"></div>
       <div id="active-speech-bubble" class="center-speech-bubble" style="display: none;"></div>
@@ -462,6 +463,39 @@
 
     let activeLinkB = null;
 
+    // 讓側邊欄可以透過滑鼠拖曳移動[cite: 4]
+    const sidebar = document.getElementById('sidebar');
+    const dragHandle = document.getElementById('sidebar-drag-handle');
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('close-sidebar-btn')) return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = sidebar.getBoundingClientRect();
+      const parentRect = sidebar.parentElement.getBoundingClientRect();
+      initialLeft = rect.left - parentRect.left;
+      initialTop = rect.top - parentRect.top;
+      sidebar.style.transform = 'none'; // 取消 translateY 置中以方便自由定位
+      sidebar.style.left = `${initialLeft}px`;
+      sidebar.style.top = `${initialTop}px`;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      sidebar.style.left = `${initialLeft + dx}px`;
+      sidebar.style.top = `${initialTop + dy}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
     document.addEventListener('click', (e) => {
       const widget = document.getElementById('widget-root');
       if (!widget.contains(e.target)) return;
@@ -471,7 +505,6 @@
       }
     });
 
-    // 點擊固定標籤，在兩個角色的頭像正上方顯示對話氣泡
     function showHeadDialogs(e, role1Key, msg1, role2Key, msg2) {
       e.stopPropagation();
       clearBubbles();
@@ -483,7 +516,7 @@
         const r = el.getBoundingClientRect();
         return {
           x: r.left + r.width / 2 - container.left,
-          y: r.top - container.top - 12 // 位於頭像圓圈上方微距
+          y: r.top - container.top - 12
         };
       };
 
@@ -530,12 +563,12 @@
         btnBox.appendChild(b);
       });
 
-      document.getElementById('sidebar').classList.add('active');
+      sidebar.classList.add('active');
     }
 
     function closeSidebar(e) {
       if (e) e.stopPropagation();
-      document.getElementById('sidebar').classList.remove('active');
+      sidebar.classList.remove('active');
     }
 
     function triggerRelationB(btnConfig) {
