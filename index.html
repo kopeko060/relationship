@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>五角形人物關係圖 Widget</title>
+  <style>
+    :root {
+      --bg-color: #faf8f5;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --border-color: #e2e8f0;
+      --text-main: #1a202c;
+      --text-sub: #718096;
+      --dim-opacity: 0.15;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121214;
+        --card-bg: rgba(28, 28, 32, 0.95);
+        --border-color: #2d3748;
+        --text-main: #f7fafc;
+        --text-sub: #a0aec0;
+        --dim-opacity: 0.12;
+      }
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 750px;
+      background: var(--bg-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .widget-container {
+      position: relative;
+      width: 1000px;
+      height: 720px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .canvas-container {
+      position: relative;
+      width: 780px;
+      height: 680px;
+    }
+
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .link-line {
+      transition: opacity 0.3s ease, stroke-width 0.3s ease;
+    }
+    .link-line.dim {
+      opacity: var(--dim-opacity) !important;
+    }
+
+    /* 左側抽屜式索引選單 */
+    .sidebar {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%) translateX(-20px);
+      width: 210px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .close-sidebar-btn {
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-sub);
+    }
+    .close-sidebar-btn:hover { color: #f56565; }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    .index-btn {
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .index-btn:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+      transform: translateX(3px);
+    }
+
+    .index-btn.active {
+      background: #334155;
+      color: #fff;
+      border-color: #1e293b;
+    }
+
+    /* 五角形角色節點 */
+    .node-group {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease, filter 0.3s ease, transform 0.2s ease;
+    }
+
+    .node-group.dim {
+      opacity: var(--dim-opacity);
+      filter: grayscale(80%);
+      pointer-events: none;
+    }
+
+    .avatar-wrapper {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      padding: 3px;
+      background: var(--card-bg);
+      border: 2.5px solid var(--border-color);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .node-group:hover .avatar-wrapper {
+      transform: scale(1.08);
+      border-color: #94a3b8;
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .name-box {
+      margin-top: 6px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: 20px;
+      padding: 3px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .emoji-large {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .char-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    /* 固定關係標籤膠囊 */
+    .rel-badge {
+      position: absolute;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+      z-index: 15;
+      cursor: pointer;
+      text-align: center;
+      white-space: pre-wrap;
+      max-width: 160px;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease, transform 0.2s ease, background 0.2s;
+    }
+
+    .rel-badge:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+      transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    .rel-badge.dim {
+      opacity: var(--dim-opacity);
+    }
+
+    /* 角色頭像上方的專屬漫畫對話框 (Speech Bubble) */
+    .head-speech-bubble {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(0, 0, 0, 0.12);
+      border-radius: 14px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a202c;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      z-index: 40;
+      text-align: center;
+      max-width: 200px;
+      line-height: 1.45;
+      transform: translate(-50%, -100%);
+      pointer-events: none;
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* 下方指向頭像的尖角 */
+    .head-speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 7px 7px 0;
+      border-style: solid;
+      border-color: rgba(255, 255, 255, 0.96) transparent;
+      display: block;
+      width: 0;
+    }
+
+    /* 側邊欄索引使用的對話框 */
+    .center-speech-bubble {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(0, 0, 0, 0.12);
+      border-radius: 14px;
+      padding: 10px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #1a202c;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      z-index: 35;
+      text-align: center;
+      max-width: 250px;
+      line-height: 1.5;
+      transform: translate(-50%, -50%);
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); }
+      100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+    }
+
+    .reset-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-sub);
+      cursor: pointer;
+      z-index: 60;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+    .reset-btn:hover { background: #edf2f7; color: var(--text-main); }
+  </style>
+</head>
+<body>
+
+  <div class="widget-container" id="widget-root">
+    <!-- 左側隱藏關係索引選單 -->
+    <div id="sidebar" class="sidebar">
+      <div class="sidebar-title">
+        <span id="sidebar-role-title">角色關係圖</span>
+        <span class="close-sidebar-btn" onclick="closeSidebar(event)">✖</span>
+      </div>
+      <div id="btn-container" class="btn-group"></div>
+    </div>
+
+    <!-- 主畫布：正五角形 -->
+    <div class="canvas-container" id="canvas">
+      <svg id="svg-layer">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+          </marker>
+          <marker id="arrow-active" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <!-- 5 個角色節點 -->
+      <div id="node-vivi" class="node-group" style="top: 80px; left: 390px;" onclick="openRoleMenu(event, 'vivi')">
+        <div class="avatar-wrapper"><img class="avatar-img" src="https://i.imgur.com/ZLqtLQj.png" referrerpolicy="no-referrer"></div>
+        <div class="name-box"><span class="emoji-large">🍎</span><span class="char-name">薇薇</span></div>
+      </div>
+
+      <div id="node-cheks" class="node-group" style="top: 240px; left: 660px;" onclick="openRoleMenu(event, 'cheks')">
+        <div class="avatar-wrapper"><img class="avatar-img" src="https://i.imgur.com/wlTIZCW.png" referrerpolicy="no-referrer"></div>
+        <div class="name-box"><span class="emoji-large">🧀</span><span class="char-name">切克斯</span></div>
+      </div>
+
+      <div id="node-police" class="node-group" style="top: 520px; left: 560px;" onclick="openRoleMenu(event, 'police')">
+        <div class="avatar-wrapper"><img class="avatar-img" src="https://i.imgur.com/puTScCM.png" referrerpolicy="no-referrer"></div>
+        <div class="name-box"><span class="emoji-large">🐭</span><span class="char-name">咔脆警隊</span></div>
+      </div>
+
+      <div id="node-lili" class="node-group" style="top: 520px; left: 220px;" onclick="openRoleMenu(event, 'lili')">
+        <div class="avatar-wrapper"><img class="avatar-img" src="https://i.imgur.com/1uQ5tSR.png" referrerpolicy="no-referrer"></div>
+        <div class="name-box"><span class="emoji-large">🖤</span><span class="char-name">莉莉絲</span></div>
+      </div>
+
+      <div id="node-louis" class="node-group" style="top: 240px; left: 120px;" onclick="openRoleMenu(event, 'louis')">
+        <div class="avatar-wrapper"><img class="avatar-img" src="https://i.imgur.com/VCLR0WW.png" referrerpolicy="no-referrer"></div>
+        <div class="name-box"><span class="emoji-large">🦈</span><span class="char-name">路易</span></div>
+      </div>
+
+      <!-- 固定實線關係 (A) 的小標題膠囊（點擊分別在兩角色頭像上方彈出氣泡！） -->
+      <div class="rel-badge fixed-tag" style="top: 240px; left: 390px;" onclick="showHeadDialogs(event, 'cheks', '別囉嗦了！衝吧！', 'louis', '啊啊啊起司!他們要抄近路追上來了啊啊啊')">摯友|搭檔</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 140px; left: 260px;" onclick="showHeadDialogs(event, 'louis', '我這次可是特地準備了好多蘋果餅碎！別再咬我了啦……TT', 'vivi', '(咬)')">製作者與寵物|好友</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 140px; left: 520px;" onclick="showHeadDialogs(event, 'cheks', '說吧，這次又想加裝什麼新功能？', 'vivi', '（歡快地搖晃大尾巴，高興得原地轉圈圈）')">製作者與寵物|好友</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 380px; left: 170px;" onclick="showHeadDialogs(event, 'louis', '要好好睡覺!!(端上燉牛奶甜品)', 'lili', '真好吃!!果然有哥罩著的孩子就是塊寶～')">兄妹</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 400px; left: 420px;" onclick="showHeadDialogs(event, 'cheks', '我去買了你最新出的黑膠唱片呢！-v-', 'lili', '嘿！夥計！不賴吧？')">好友</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 320px; left: 310px;" onclick="showHeadDialogs(event, 'vivi', '（尾巴高速擺動，小心翼翼地放下禮物）', 'lili', '哎呀，又是你這小傢伙！多謝啦！（飛吻)(俏皮wink）')">偶像與粉絲</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 520px; left: 390px;" onclick="showHeadDialogs(event, 'police', '好不容易下班了，當然要來聽點好音樂才行！', 'lili', '噢，親愛的警察先生，執勤時間可以喝熱酒嗎？')">偶像與粉絲</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 420px; left: 330px;" onclick="showHeadDialogs(event, 'louis', '(眼神飄忽，轉身拔腿就跑 💨）', 'police', '站住——別想跑——！！')">通輯與被通輯</div>
+      
+      <div class="rel-badge fixed-tag" style="top: 420px; left: 610px;" onclick="showHeadDialogs(event, 'cheks', '有本事的話，就儘管追上來吧!', 'police', '吱吱——可惡的傢伙，給我站住——！')">通輯與被通輯</div>
+
+      <!-- 動態頭像對話框容器 (氣泡 1 & 氣泡 2) -->
+      <div id="head-bubble-1" class="head-speech-bubble" style="display: none;"></div>
+      <div id="head-bubble-2" class="head-speech-bubble" style="display: none;"></div>
+      <div id="active-speech-bubble" class="center-speech-bubble" style="display: none;"></div>
+    </div>
+
+    <button class="reset-btn" onclick="resetAll(event)">🔄 重置全圖焦距</button>
+  </div>
+
+  <script>
+    const roleData = {
+      cheks: {
+        title: "🧀切克斯的關係圖",
+        buttons: [
+          { label: "[🧀⮂🦈]", targets: ["cheks", "louis"], title: "互相依賴" },
+          { label: "[🧀⮕🦈]", targets: ["cheks", "louis"], title: "依賴、喜愛" },
+          { label: "[🧀⮕🍎]", targets: ["cheks", "vivi"], title: "覺得可愛" },
+          { label: "[🧀⮕🖤]", targets: ["cheks", "lili"], title: "唱歌真好聽!、有趣" },
+          { label: "[🧀⮕🐭]", targets: ["cheks", "police"], title: "真有趣!" }
+        ]
+      },
+      louis: {
+        title: "🦈路易的關係圖",
+        buttons: [
+          { label: "[🧀⮂🦈]", targets: ["louis", "cheks"], title: "互相依賴" },
+          { label: "[🦈⮕🧀]", targets: ["louis", "cheks"], title: "依賴、擔心/疼惜" },
+          { label: "[🦈⮕🍎]", targets: ["louis", "vivi"], title: "被討厭了嗎?QWQ、覺得可愛" },
+          { label: "[🦈⮕🖤]", targets: ["louis", "lili"], title: "擔心、(口是心非版本)📣＼(≧▽≦)／世界第一妹妹!!" },
+          { label: "[🦈⮕🐭]", targets: ["louis", "police"], title: "害怕" }
+        ]
+      },
+      vivi: {
+        title: "🍎薇薇的關係圖",
+        buttons: [
+          { label: "[🍎⮕🦈]", targets: ["vivi", "louis"], title: "笨蛋、欺負對象" },
+          { label: "[🍎⮕🧀]", targets: ["vivi", "cheks"], title: "笨蛋、修理工人、美容師" },
+          { label: "[🍎⮕🖤]", targets: ["vivi", "lili"], title: "📣＼(≧▽≦)／世界第一喜歡!!" }
+        ]
+      },
+      lili: {
+        title: "🖤莉莉絲的關係圖",
+        buttons: [
+          { label: "[🖤⮕🦈]", targets: ["lili", "louis"], title: "笨蛋、擔心" },
+          { label: "[🖤⮕🧀]", targets: ["lili", "cheks"], title: "謝謝改變了哥哥(感恩)、有趣" },
+          { label: "[🖤⮕🍎]", targets: ["lili", "vivi"], title: "送的小零食都太好吃了!(感恩)" }
+        ]
+      },
+      police: {
+        title: "🐭咔脆警隊的關係圖",
+        buttons: [
+          { label: "[🐭⮕🧀🦈]", targets: ["police", "cheks", "louis"], title: "頭號通緝對象!!" },
+          { label: "[🐭⮕🍎]", targets: ["police", "vivi"], title: "可疑對象!!" },
+          { label: "[🐭⮕🖤]", targets: ["police", "lili"], title: "下次出一首起司主題的歌曲吧📣＼(≧▽≦)／" }
+        ]
+      }
+    };
+
+    let activeLinkB = null;
+
+    document.addEventListener('click', (e) => {
+      const widget = document.getElementById('widget-root');
+      if (!widget.contains(e.target)) return;
+      
+      if (!e.target.closest('.node-group') && !e.target.closest('.sidebar') && !e.target.closest('.reset-btn') && !e.target.closest('.fixed-tag')) {
+        resetAll();
+      }
+    });
+
+    // 點擊固定標籤，在兩個角色的頭像正上方顯示對話氣泡
+    function showHeadDialogs(e, role1Key, msg1, role2Key, msg2) {
+      e.stopPropagation();
+      clearBubbles();
+
+      const container = document.getElementById('canvas').getBoundingClientRect();
+      
+      const getHeadPos = key => {
+        const el = document.getElementById(`node-${key}`);
+        const r = el.getBoundingClientRect();
+        return {
+          x: r.left + r.width / 2 - container.left,
+          y: r.top - container.top - 12 // 位於頭像圓圈上方微距
+        };
+      };
+
+      const pos1 = getHeadPos(role1Key);
+      const pos2 = getHeadPos(role2Key);
+
+      const b1 = document.getElementById('head-bubble-1');
+      b1.style.left = `${pos1.x}px`;
+      b1.style.top = `${pos1.y}px`;
+      b1.innerHTML = msg1;
+      b1.style.display = 'block';
+
+      const b2 = document.getElementById('head-bubble-2');
+      b2.style.left = `${pos2.x}px`;
+      b2.style.top = `${pos2.y}px`;
+      b2.innerHTML = msg2;
+      b2.style.display = 'block';
+    }
+
+    function clearBubbles() {
+      document.getElementById('head-bubble-1').style.display = 'none';
+      document.getElementById('head-bubble-2').style.display = 'none';
+      document.getElementById('active-speech-bubble').style.display = 'none';
+    }
+
+    function openRoleMenu(e, roleKey) {
+      e.stopPropagation();
+      clearBubbles();
+      const data = roleData[roleKey];
+      document.getElementById('sidebar-role-title').innerText = data.title;
+      const btnBox = document.getElementById('btn-container');
+      btnBox.innerHTML = '';
+
+      data.buttons.forEach((btn) => {
+        const b = document.createElement('button');
+        b.className = 'index-btn';
+        b.innerHTML = `<span>${btn.label}</span>`;
+        b.onclick = (event) => {
+          event.stopPropagation();
+          document.querySelectorAll('.index-btn').forEach(el => el.classList.remove('active'));
+          b.classList.add('active');
+          triggerRelationB(btn);
+        };
+        btnBox.appendChild(b);
+      });
+
+      document.getElementById('sidebar').classList.add('active');
+    }
+
+    function closeSidebar(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('sidebar').classList.remove('active');
+    }
+
+    function triggerRelationB(btnConfig) {
+      clearBubbles();
+      const allRoles = ['vivi', 'cheks', 'police', 'lili', 'louis'];
+      const targetRoles = btnConfig.targets;
+
+      allRoles.forEach(r => {
+        const el = document.getElementById(`node-${r}`);
+        if (targetRoles.includes(r)) {
+          el.classList.remove('dim');
+        } else {
+          el.classList.add('dim');
+        }
+      });
+
+      document.querySelectorAll('.link-line').forEach(l => l.classList.add('dim'));
+      document.querySelectorAll('.fixed-tag').forEach(t => t.classList.add('dim'));
+
+      drawDynamicDashB(btnConfig);
+    }
+
+    function drawDynamicDashB(btnConfig) {
+      const svg = document.getElementById('svg-layer');
+      const container = document.getElementById('canvas').getBoundingClientRect();
+
+      if (activeLinkB) activeLinkB.remove();
+
+      const getCenter = id => {
+        const el = document.getElementById(id).getBoundingClientRect();
+        return { x: el.left + el.width/2 - container.left, y: el.top + el.height/2 - container.top };
+      };
+
+      const fromPos = getCenter(`node-${btnConfig.targets[0]}`);
+      
+      if (btnConfig.targets.length > 2) {
+        const to1 = getCenter(`node-${btnConfig.targets[1]}`);
+        const to2 = getCenter(`node-${btnConfig.targets[2]}`);
+        const midX = (to1.x + to2.x) / 2;
+        const midY = (to1.y + to2.y) / 2;
+
+        createDashLine(svg, fromPos, {x: midX, y: midY});
+        positionCenterBubble((fromPos.x + midX)/2, (fromPos.y + midY)/2, btnConfig.title);
+      } else {
+        let toPos = getCenter(`node-${btnConfig.targets[1]}`);
+        
+        const dx = toPos.x - fromPos.x;
+        const dy = toPos.y - fromPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 0) {
+          const offset = 36;
+          toPos = {
+            x: toPos.x - (dx / dist) * offset,
+            y: toPos.y - (dy / dist) * offset
+          };
+        }
+
+        createDashLine(svg, fromPos, toPos);
+        positionCenterBubble((fromPos.x + toPos.x)/2, (fromPos.y + toPos.y)/2, btnConfig.title);
+      }
+    }
+
+    function createDashLine(svg, from, to) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', from.x);
+      line.setAttribute('y1', from.y);
+      line.setAttribute('x2', to.x);
+      line.setAttribute('y2', to.y);
+      line.setAttribute('stroke', '#64748b');
+      line.setAttribute('stroke-width', '2.5');
+      line.setAttribute('stroke-dasharray', '6,6');
+      line.setAttribute('marker-end', 'url(#arrow-active)');
+      line.id = 'dynamic-dash-b';
+      svg.appendChild(line);
+      activeLinkB = line;
+    }
+
+    function positionCenterBubble(x, y, textContent) {
+      const bubble = document.getElementById('active-speech-bubble');
+      bubble.style.left = `${x}px`;
+      bubble.style.top = `${y}px`;
+      bubble.innerHTML = textContent;
+      bubble.style.display = 'block';
+    }
+
+    function resetAll(e) {
+      if (e) e.stopPropagation();
+      closeSidebar();
+      clearBubbles();
+      document.querySelectorAll('.node-group').forEach(el => el.classList.remove('dim'));
+      document.querySelectorAll('.link-line').forEach(l => l.classList.remove('dim'));
+      document.querySelectorAll('.fixed-tag').forEach(t => t.classList.remove('dim'));
+      
+      if (activeLinkB) {
+        activeLinkB.remove();
+        activeLinkB = null;
+      }
+      document.querySelectorAll('.index-btn').forEach(el => el.classList.remove('active'));
+    }
+
+    window.addEventListener('load', () => {
+      const svg = document.getElementById('svg-layer');
+      const container = document.getElementById('canvas').getBoundingClientRect();
+
+      const getPos = id => {
+        const el = document.getElementById(id).getBoundingClientRect();
+        return { x: el.left + el.width/2 - container.left, y: el.top + el.height/2 - container.top };
+      };
+
+      const p = {
+        vivi: getPos('node-vivi'),
+        cheks: getPos('node-cheks'),
+        police: getPos('node-police'),
+        lili: getPos('node-lili'),
+        louis: getPos('node-louis')
+      };
+
+      const actualLines = [
+        { from: p.louis, to: p.cheks },
+        { from: p.louis, to: p.vivi },
+        { from: p.cheks, to: p.vivi },
+        { from: p.louis, to: p.lili },
+        { from: p.cheks, to: p.lili },
+        { from: p.vivi, to: p.lili },
+        { from: p.police, to: p.lili },
+        { from: p.police, to: p.louis },
+        { from: p.police, to: p.cheks }
+      ];
+
+      actualLines.forEach(l => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', l.from.x);
+        line.setAttribute('y1', l.from.y);
+        line.setAttribute('x2', l.to.x);
+        line.setAttribute('y2', l.to.y);
+        line.setAttribute('stroke', '#cbd5e1');
+        line.setAttribute('stroke-width', '2');
+        line.classList.add('link-line', 'fixed-line');
+        svg.appendChild(line);
+      });
+    });
+  </script>
+</body>
+</html>
