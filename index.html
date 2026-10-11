@@ -73,7 +73,7 @@
       opacity: var(--dim-opacity) !important;
     }
 
-    /* 支援滑鼠拖曳的索引選單[cite: 4] */
+    /* 支援滑鼠拖曳的索引選單 */
     .sidebar {
       position: absolute;
       left: 20px;
@@ -109,7 +109,7 @@
       align-items: center;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 8px;
-      cursor: grab; /* 提示使用者可拖曳 */
+      cursor: grab;
     }
     .sidebar-title:active {
       cursor: grabbing;
@@ -153,10 +153,11 @@
       transform: translateX(3px);
     }
 
+    /* 修改 2：選取時的顏色改為柔和灰色 */
     .index-btn.active {
-      background: #334155;
-      color: #fff;
-      border-color: #1e293b;
+      background: #e2e8f0;
+      color: #1a202c;
+      border-color: #cbd5e1;
     }
 
     /* 五角形角色節點 */
@@ -337,7 +338,7 @@
 <body>
 
   <div class="widget-container" id="widget-root">
-    <!-- 左側可拖曳的關係索引選單[cite: 4] -->
+    <!-- 左側可拖曳的關係索引選單 -->
     <div id="sidebar" class="sidebar">
       <div id="sidebar-drag-handle" class="sidebar-title">
         <span id="sidebar-role-title">角色關係圖</span>
@@ -354,7 +355,7 @@
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
           </marker>
           <marker id="arrow-active" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
           </marker>
         </defs>
       </svg>
@@ -414,56 +415,56 @@
   </div>
 
   <script>
+    // 修改 2：取消按鈕中的 [] 外框
     const roleData = {
       cheks: {
         title: "🧀切克斯的關係圖",
         buttons: [
-          { label: "[🧀⮂🦈]", targets: ["cheks", "louis"], title: "互相依賴" },
-          { label: "[🧀⮕🦈]", targets: ["cheks", "louis"], title: "依賴、喜愛" },
-          { label: "[🧀⮕🍎]", targets: ["cheks", "vivi"], title: "覺得可愛" },
-          { label: "[🧀⮕🖤]", targets: ["cheks", "lili"], title: "唱歌真好聽!、有趣" },
-          { label: "[🧀⮕🐭]", targets: ["cheks", "police"], title: "真有趣!" }
+          { label: "🧀⮂🦈", targets: ["cheks", "louis"], title: "互相依賴" },
+          { label: "🧀⮕🦈", targets: ["cheks", "louis"], title: "依賴、喜愛" },
+          { label: "🧀⮕🍎", targets: ["cheks", "vivi"], title: "覺得可愛" },
+          { label: "🧀⮕🖤", targets: ["cheks", "lili"], title: "唱歌真好聽!、有趣" },
+          { label: "🧀⮕🐭", targets: ["cheks", "police"], title: "真有趣!" }
         ]
       },
       louis: {
         title: "🦈路易的關係圖",
         buttons: [
-          { label: "[🧀⮂🦈]", targets: ["louis", "cheks"], title: "互相依賴" },
-          { label: "[🦈⮕🧀]", targets: ["louis", "cheks"], title: "依賴、擔心/疼惜" },
-          { label: "[🦈⮕🍎]", targets: ["louis", "vivi"], title: "被討厭了嗎?QWQ、覺得可愛" },
-          { label: "[🦈⮕🖤]", targets: ["louis", "lili"], title: "擔心、(口是心非版本)📣＼(≧▽≦)／世界第一妹妹!!" },
-          { label: "[🦈⮕🐭]", targets: ["louis", "police"], title: "害怕" }
+          { label: "🧀⮂🦈", targets: ["louis", "cheks"], title: "互相依賴" },
+          { label: "🦈⮕🧀", targets: ["louis", "cheks"], title: "依賴、擔心/疼惜" },
+          { label: "🦈⮕🍎", targets: ["louis", "vivi"], title: "被討厭了嗎?QWQ、覺得可愛" },
+          { label: "🦈⮕🖤", targets: ["louis", "lili"], title: "擔心、(口是心非版本)📣＼(≧▽≦)／世界第一妹妹!!" },
+          { label: "🦈⮕🐭", targets: ["louis", "police"], title: "害怕" }
         ]
       },
       vivi: {
         title: "🍎薇薇的關係圖",
         buttons: [
-          { label: "[🍎⮕🦈]", targets: ["vivi", "louis"], title: "笨蛋、欺負對象" },
-          { label: "[🍎⮕🧀]", targets: ["vivi", "cheks"], title: "笨蛋、修理工人、美容師" },
-          { label: "[🍎⮕🖤]", targets: ["vivi", "lili"], title: "📣＼(≧▽≦)／世界第一喜歡!!" }
+          { label: "🍎⮕🦈", targets: ["vivi", "louis"], title: "笨蛋、欺負對象" },
+          { label: "🍎⮕🧀", targets: ["vivi", "cheks"], title: "笨蛋、修理工人、美容師" },
+          { label: "🍎⮕🖤", targets: ["vivi", "lili"], title: "📣＼(≧▽≦)／世界第一喜歡!!" }
         ]
       },
       lili: {
         title: "🖤莉莉絲的關係圖",
         buttons: [
-          { label: "[🖤⮕🦈]", targets: ["lili", "louis"], title: "笨蛋、擔心" },
-          { label: "[🖤⮕🧀]", targets: ["lili", "cheks"], title: "謝謝改變了哥哥(感恩)、有趣" },
-          { label: "[🖤⮕🍎]", targets: ["lili", "vivi"], title: "送的小零食都太好吃了!(感恩)" }
+          { label: "🖤⮕🦈", targets: ["lili", "louis"], title: "笨蛋、擔心" },
+          { label: "🖤⮕🧀", targets: ["lili", "cheks"], title: "謝謝改變了哥哥(感恩)、有趣" },
+          { label: "🖤⮕🍎", targets: ["lili", "vivi"], title: "送的小零食都太好吃了!(感恩)" }
         ]
       },
       police: {
         title: "🐭咔脆警隊的關係圖",
         buttons: [
-          { label: "[🐭⮕🧀🦈]", targets: ["police", "cheks", "louis"], title: "頭號通緝對象!!" },
-          { label: "[🐭⮕🍎]", targets: ["police", "vivi"], title: "可疑對象!!" },
-          { label: "[🐭⮕🖤]", targets: ["police", "lili"], title: "下次出一首起司主題的歌曲吧📣＼(≧▽≦)／" }
+          { label: "🐭⮕🧀🦈", targets: ["police", "cheks", "louis"], title: "頭號通緝對象!!" },
+          { label: "🐭⮕🍎", targets: ["police", "vivi"], title: "可疑對象!!" },
+          { label: "🐭⮕🖤", targets: ["police", "lili"], title: "下次出一首起司主題的歌曲吧📣＼(≧▽≦)／" }
         ]
       }
     };
 
-    let activeLinkB = null;
+    let activeLinksB = [];
 
-    // 讓側邊欄可以透過滑鼠拖曳移動[cite: 4]
     const sidebar = document.getElementById('sidebar');
     const dragHandle = document.getElementById('sidebar-drag-handle');
     let isDragging = false;
@@ -478,7 +479,7 @@
       const parentRect = sidebar.parentElement.getBoundingClientRect();
       initialLeft = rect.left - parentRect.left;
       initialTop = rect.top - parentRect.top;
-      sidebar.style.transform = 'none'; // 取消 translateY 置中以方便自由定位
+      sidebar.style.transform = 'none';
       sidebar.style.left = `${initialLeft}px`;
       sidebar.style.top = `${initialTop}px`;
       e.preventDefault();
@@ -591,11 +592,14 @@
       drawDynamicDashB(btnConfig);
     }
 
+    // 修改 1：支援雙虛線繪製與標籤置中
     function drawDynamicDashB(btnConfig) {
       const svg = document.getElementById('svg-layer');
       const container = document.getElementById('canvas').getBoundingClientRect();
 
-      if (activeLinkB) activeLinkB.remove();
+      // 清除舊的動態線條
+      activeLinksB.forEach(l => l.remove());
+      activeLinksB = [];
 
       const getCenter = id => {
         const el = document.getElementById(id).getBoundingClientRect();
@@ -605,30 +609,37 @@
       const fromPos = getCenter(`node-${btnConfig.targets[0]}`);
       
       if (btnConfig.targets.length > 2) {
-        const to1 = getCenter(`node-${btnConfig.targets[1]}`);
-        const to2 = getCenter(`node-${btnConfig.targets[2]}`);
-        const midX = (to1.x + to2.x) / 2;
-        const midY = (to1.y + to2.y) / 2;
+        // 針對警隊對 🧀 與 🦈 的雙線通輯
+        const to1Pos = getAdjustedTargetPos(fromPos, getCenter(`node-${btnConfig.targets[1]}`));
+        const to2Pos = getAdjustedTargetPos(fromPos, getCenter(`node-${btnConfig.targets[2]}`));
 
-        createDashLine(svg, fromPos, {x: midX, y: midY});
-        positionCenterBubble((fromPos.x + midX)/2, (fromPos.y + midY)/2, btnConfig.title);
+        createDashLine(svg, fromPos, to1Pos);
+        createDashLine(svg, fromPos, to2Pos);
+
+        // 讓標籤剛好夾在兩條線的正中間
+        const midX = (to1Pos.x + to2Pos.x) / 2;
+        const midY = (to1Pos.y + to2Pos.y) / 2;
+        positionCenterBubble(midX, midY, btnConfig.title);
       } else {
-        let toPos = getCenter(`node-${btnConfig.targets[1]}`);
-        
-        const dx = toPos.x - fromPos.x;
-        const dy = toPos.y - fromPos.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 0) {
-          const offset = 36;
-          toPos = {
-            x: toPos.x - (dx / dist) * offset,
-            y: toPos.y - (dy / dist) * offset
-          };
-        }
+        let toPos = getAdjustedTargetPos(fromPos, getCenter(`node-${btnConfig.targets[1]}`));
 
         createDashLine(svg, fromPos, toPos);
         positionCenterBubble((fromPos.x + toPos.x)/2, (fromPos.y + toPos.y)/2, btnConfig.title);
       }
+    }
+
+    function getAdjustedTargetPos(fromPos, toPos) {
+      const dx = toPos.x - fromPos.x;
+      const dy = toPos.y - fromPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 0) {
+        const offset = 36;
+        return {
+          x: toPos.x - (dx / dist) * offset,
+          y: toPos.y - (dy / dist) * offset
+        };
+      }
+      return toPos;
     }
 
     function createDashLine(svg, from, to) {
@@ -641,9 +652,8 @@
       line.setAttribute('stroke-width', '2.5');
       line.setAttribute('stroke-dasharray', '6,6');
       line.setAttribute('marker-end', 'url(#arrow-active)');
-      line.id = 'dynamic-dash-b';
       svg.appendChild(line);
-      activeLinkB = line;
+      activeLinksB.push(line);
     }
 
     function positionCenterBubble(x, y, textContent) {
@@ -662,10 +672,9 @@
       document.querySelectorAll('.link-line').forEach(l => l.classList.remove('dim'));
       document.querySelectorAll('.fixed-tag').forEach(t => t.classList.remove('dim'));
       
-      if (activeLinkB) {
-        activeLinkB.remove();
-        activeLinkB = null;
-      }
+      activeLinksB.forEach(l => l.remove());
+      activeLinksB = [];
+
       document.querySelectorAll('.index-btn').forEach(el => el.classList.remove('active'));
     }
 
